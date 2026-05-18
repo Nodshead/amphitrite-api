@@ -210,11 +210,9 @@
     <a href="#request"      class="nav-item">Making a Request</a>
     <a href="#async"        class="nav-item">Async &amp; Tasks</a>
     <a href="#2d"           class="nav-item">2D Map Data <span class="beta-chip">Beta</span></a>
-    <a href="#viz"          class="nav-item">Visualization</a>
 
     <div class="nav-label">Reference</div>
     <a href="#data-specs"   class="nav-item">Data Specs</a>
-    <a href="#conventions"  class="nav-item">Direction Conventions</a>
     <a href="#contact"      class="nav-item">Contact</a>
   </div>
 </nav>
@@ -416,32 +414,7 @@
     </table>
   </div>
 
-  <h3>Response shape</h3>
-  <div class="code-block">
-    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-    <pre>{
-  <span class="key">"task_id"</span>: <span class="str">"uuid"</span>,
-  <span class="key">"status"</span>:  <span class="str">"SUCCESS"</span>,
-  <span class="key">"result"</span>: {
-    <span class="key">"result"</span>: [
-      {
-        <span class="key">"coordinates"</span>: { <span class="key">"latitude"</span>: <span class="num">47.2</span>, <span class="key">"longitude"</span>: <span class="num">-32.0</span>, <span class="key">"timestamp"</span>: <span class="str">"2025-01-15T12:00:00Z"</span> },
-        <span class="key">"conditions"</span>: {
-          <span class="key">"Currents_Intensity"</span>:       <span class="num">0.21</span>,
-          <span class="key">"Currents_Direction"</span>:       <span class="num">194</span>,
-          <span class="key">"Winds_10m_Intensity"</span>:      <span class="num">14.62</span>,
-          <span class="key">"Winds_10m_Direction"</span>:      <span class="num">192</span>,
-          <span class="key">"Waves_Significant_Height"</span>: <span class="num">4.8</span>,
-          <span class="key">"Waves_Mean_Period"</span>:        <span class="num">9.63</span>,
-          <span class="key">"Waves_Mean_Direction"</span>:     <span class="num">220</span>
-        }
-      }
-    ]
-  }
-}</pre>
-  </div>
-
-  <p>Missing or unavailable values return as <code>null</code>.</p>
+  <p>Each point in the response contains a <code>coordinates</code> object and a <code>conditions</code> object with all requested fields. Missing or unavailable values return as <code>null</code>.</p>
 </section>
 
 <!-- ── Making a Request ── -->
@@ -464,17 +437,7 @@ x-api-key: YOUR_API_KEY
 }</pre>
   </div>
 
-  <h3>Optional parameters</h3>
-  <div class="tw">
-    <table>
-      <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
-      <tbody>
-        <tr><td><code>wind_height</code></td><td>float</td><td><code>10</code></td><td>Wind retrieval height above sea surface in metres. Range: 10–100.</td></tr>
-        <tr><td><code>task_name</code></td><td>string</td><td>—</td><td>Label this request — makes it identifiable in the task list.</td></tr>
-        <tr><td><code>receive_mail</code></td><td>boolean</td><td><code>false</code></td><td>Email notification on task start and completion (with results attached).</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <p>Optional: <code>wind_height</code> (metres, default 10, range 10–100), <code>task_name</code> to label the request, and <code>receive_mail: true</code> for email notification with results on completion.</p>
 
   <h3>Python example</h3>
   <div class="code-block">
@@ -508,18 +471,7 @@ print(response.<span class="fn">json</span>())</pre>
     </table>
   </div>
 
-  <h3>Task status response</h3>
-  <div class="code-block">
-    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-    <pre>{
-  <span class="key">"task_id"</span>: <span class="str">"uuid"</span>,
-  <span class="key">"status"</span>:  <span class="str">"PENDING"</span>,   <span class="cm">// "PENDING" | "SUCCESS" | "FAILURE"</span>
-  <span class="key">"result"</span>:  <span class="kw">null</span>,          <span class="cm">// populated on SUCCESS</span>
-  <span class="key">"error"</span>:   <span class="kw">null</span>           <span class="cm">// populated on FAILURE</span>
-}</pre>
-  </div>
-
-  <p>List all tasks for your key at <code>GET /user/tasks</code>. Filter by appending <code>/PENDING</code> or <code>/SUCCESS</code>. Email notifications (with results as a JSON attachment) can be enabled per-request with <code>"receive_mail": true</code>.</p>
+  <p>Poll <code>GET /task/{task_id}</code> — status will be <code>PENDING</code>, <code>SUCCESS</code>, or <code>FAILURE</code>. Results are populated on success. List all tasks at <code>GET /user/tasks</code>, filter with <code>/PENDING</code> or <code>/SUCCESS</code>.</p>
 </section>
 
 <!-- ── 2D Map Data ── -->
@@ -547,24 +499,6 @@ x-api-key: YOUR_API_KEY
   </div>
 
   <p>The response <code>conditions</code> object contains 2D arrays: outer index = latitude, inner index = longitude. Pass a two-element timestamp array for a time range: <code>"timestamp": ["2025-01-15T00:00:00Z", "2025-01-15T06:00:00Z"]</code>.</p>
-</section>
-
-<!-- ── Visualization ── -->
-<section id="viz">
-  <h2>Visualization</h2>
-  <p>Pass any MetOcean API response to <code>POST /plot_timeseries</code> — receive a high-resolution PNG chart with no client-side plotting required. Useful for reports, briefings, and operational dashboards.</p>
-
-  <div class="code-block">
-    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-    <pre>chart = requests.<span class="fn">post</span>(
-    <span class="str">"https://api.amphitrite.fr/plot_timeseries"</span>,
-    headers=headers, json=metocean_response
-)
-<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"chart.png"</span>, <span class="str">"wb"</span>) <span class="kw">as</span> f:
-    f.<span class="fn">write</span>(chart.content)</pre>
-  </div>
-
-  <p>Output covers all requested variables: current intensity and direction, wave height and period, wind intensity and direction, SST, and bathymetry — each as a labelled panel with min/max/mean indicators.</p>
 </section>
 
 <!-- ── Data Specs ── -->
@@ -650,41 +584,6 @@ x-api-key: YOUR_API_KEY
       </tbody>
     </table>
   </div>
-</section>
-
-<!-- ── Direction Conventions ── -->
-<section id="conventions">
-  <h2>Direction Conventions</h2>
-
-  <div class="callout critical">
-    <strong>Critical for integration:</strong> current directions and wind/wave directions use opposite conventions.
-  </div>
-
-  <div class="tw">
-    <table>
-      <thead><tr><th>Field</th><th>Convention</th><th>Example</th></tr></thead>
-      <tbody>
-        <tr>
-          <td><code>Currents_Direction</code></td>
-          <td>Direction the current is flowing <strong>TO</strong></td>
-          <td>90° = current flowing eastward</td>
-        </tr>
-        <tr>
-          <td><code>Winds_10m_Direction</code></td>
-          <td>Direction wind is coming <strong>FROM</strong></td>
-          <td>90° = wind blowing from the east</td>
-        </tr>
-        <tr>
-          <td><code>Waves_Mean_Direction</code><br>
-              <code>Swell_Wave_Mean_Direction</code><br>
-              <code>Wind_Wave_Mean_Direction</code></td>
-          <td>Direction waves are coming <strong>FROM</strong></td>
-          <td>90° = waves propagating westward</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <p>All directions in degrees, measured clockwise from 0° (North).</p>
 </section>
 
 <!-- ── Contact ── -->
