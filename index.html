@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amphitrite MetOcean API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar-bg: #0D2145;
+      --sidebar-text: #8BAEC8;
+      --sidebar-active: #FFFFFF;
+      --accent: #1B8FBF;
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --border: #E2E8F0;
+      --text: #1A2332;
+      --text-muted: #64748B;
+      --code-bg: #F1F5F9;
+      --sidebar-width: 248px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--sidebar-bg);
+      overflow-y: auto;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sidebar-logo img { height: 30px; }
+    .sidebar-logo-text { display: flex; flex-direction: column; }
+    .sidebar-logo-text .name {
+      font-size: 13px; font-weight: 600;
+      color: #FFFFFF; line-height: 1.2;
+    }
+    .sidebar-logo-text .sub {
+      font-size: 10px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--sidebar-text);
+    }
+    .sidebar-nav { padding: 16px 0; flex: 1; }
+    .nav-group-label {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: rgba(139,174,200,0.5);
+      padding: 16px 20px 6px;
+    }
+    .nav-item {
+      display: block;
+      padding: 7px 20px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 2px solid transparent;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .nav-item.active {
+      color: #fff; font-weight: 500;
+      border-left-color: var(--accent);
+      background: rgba(27,143,191,0.1);
+    }
+    .beta-pill {
+      display: inline-block;
+      background: #FEF3C7; color: #92400E;
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 1px 5px; border-radius: 3px;
+      vertical-align: middle; margin-left: 5px;
+    }
+
+    /* ── Layout ── */
+    .main { margin-left: var(--sidebar-width); min-height: 100vh; }
+    .content { max-width: 840px; padding: 56px 52px 120px; }
+
+    /* ── Typography ── */
+    section { margin-bottom: 72px; scroll-margin-top: 32px; }
+    h1 { font-size: 28px; font-weight: 600; margin-bottom: 12px; line-height: 1.3; }
+    h2 {
+      font-size: 20px; font-weight: 600;
+      margin-top: 48px; margin-bottom: 14px;
+      padding-top: 48px; border-top: 1px solid var(--border);
+    }
+    h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+    h3 { font-size: 14px; font-weight: 600; margin-top: 28px; margin-bottom: 10px; color: var(--text); }
+    p { margin-bottom: 14px; font-size: 14px; line-height: 1.7; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .lead { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 28px; }
+    ul { margin: 8px 0 12px 20px; }
+    li { line-height: 2; font-size: 13.5px; }
+
+    /* ── Method badges ── */
+    .method {
+      display: inline-block;
+      padding: 2px 7px; border-radius: 4px;
+      font-size: 11px; font-weight: 700;
+      font-family: monospace; margin-right: 4px;
+    }
+    .method-post { background: #DBEAFE; color: #1E40AF; }
+    .method-get  { background: #D1FAE5; color: #065F46; }
+    .tag-beta { background: #FEF3C7; color: #92400E; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+
+    /* ── Cards ── */
+    .card-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 20px 0 28px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px;
+    }
+    .card-icon { font-size: 20px; margin-bottom: 8px; }
+    .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .card-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Tables ── */
+    .table-wrap {
+      overflow-x: auto; margin: 14px 0;
+      border: 1px solid var(--border); border-radius: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    thead th {
+      background: var(--code-bg); padding: 10px 14px;
+      text-align: left; font-weight: 600; font-size: 11.5px;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.04em; border-bottom: 1px solid var(--border);
+    }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(27,143,191,0.03); }
+
+    /* ── Code ── */
+    code {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 12.5px;
+      background: var(--code-bg); border: 1px solid var(--border);
+      padding: 1px 5px; border-radius: 3px; color: #DC2626;
+    }
+    .code-block {
+      position: relative; background: var(--code-bg);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 20px; margin: 14px 0; overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px; line-height: 1.65; color: var(--text);
+      white-space: pre;
+    }
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 4px 10px;
+      font-size: 11px; font-weight: 500; color: var(--text-muted);
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .copy-btn:hover { color: var(--text); border-color: #94A3B8; }
+    .copy-btn.copied { color: #065F46; border-color: #6EE7B7; background: #ECFDF5; }
+
+    /* Syntax colours */
+    .kw  { color: #7C3AED; }
+    .str { color: #059669; }
+    .cm  { color: #94A3B8; font-style: italic; }
+    .num { color: #D97706; }
+    .key { color: #1B8FBF; }
+    .fn  { color: #2563EB; }
+
+    /* ── Callouts ── */
+    .callout { padding: 13px 16px; border-radius: 8px; margin: 14px 0; font-size: 13.5px; line-height: 1.6; }
+    .callout-info     { background: #EFF6FF; border-left: 3px solid #3B82F6; color: #1E3A5F; }
+    .callout-warning  { background: #FFFBEB; border-left: 3px solid #F59E0B; color: #78350F; }
+    .callout-critical { background: #FFF1F2; border-left: 3px solid #F43F5E; color: #881337; }
+
+    /* ── Footer ── */
+    footer { padding: 32px 52px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 13px; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .sidebar { position: static; width: 100%; height: auto; }
+      .main { margin-left: 0; }
+      .content { padding: 32px 20px 80px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ SIDEBAR ════════════════════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img src="https://api.amphitrite.fr/docs/rotating_logo.gif" alt="Amphitrite logo">
+    <div class="sidebar-logo-text">
+      <span class="name">Amphitrite</span>
+      <span class="sub">MetOcean API</span>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-group-label">Getting Started</div>
+    <a href="#overview"       class="nav-item active">Overview</a>
+    <a href="#authentication" class="nav-item">Authentication</a>
+    <a href="#endpoints"      class="nav-item">Endpoints</a>
+
+    <div class="nav-group-label">API Reference</div>
+    <a href="#route-data"   class="nav-item">Route Data</a>
+    <a href="#2d-map-data"  class="nav-item">2D Map Data <span class="beta-pill">Beta</span></a>
+    <a href="#visualization" class="nav-item">Visualization</a>
+    <a href="#async"        class="nav-item">Async &amp; Task Management</a>
+
+    <div class="nav-group-label">Reference</div>
+    <a href="#data-specs"   class="nav-item">Data Specs</a>
+    <a href="#conventions"  class="nav-item">Direction Conventions</a>
+    <a href="#contact"      class="nav-item">Contact</a>
+  </div>
+</nav>
+
+<!-- ════════════════════ MAIN ════════════════════ -->
+<main class="main">
+<div class="content">
+
+<!-- ── Overview ── -->
+<section id="overview">
+  <h1>Amphitrite MetOcean API</h1>
+  <p class="lead">High-resolution ocean and atmospheric data along a ship's route or over a defined geographic area. Access forecast, reanalysis, and historical data from a single endpoint.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">🌊</div>
+      <div class="card-title">Ocean Currents</div>
+      <div class="card-desc">Satellite-observed surface currents with tidal components. 1/30° (~3.7 km) resolution.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🍃</div>
+      <div class="card-title">Wind &amp; Waves</div>
+      <div class="card-desc">Surface winds, gusts, significant wave height, mean direction and period.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌡️</div>
+      <div class="card-title">SST &amp; Bathymetry</div>
+      <div class="card-desc">Sea surface temperature from infrared satellites. Fixed ocean depth data.</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Capability</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Base URL</td><td><code>https://api.amphitrite.fr</code></td></tr>
+        <tr><td>Request format</td><td>JSON</td></tr>
+        <tr><td>Authentication</td><td>API key via request header</td></tr>
+        <tr><td>Historical data</td><td>Up to 3 years prior</td></tr>
+        <tr><td>Forecast horizon</td><td>7 days ahead</td></tr>
+        <tr><td>Processing modes</td><td>Synchronous and asynchronous</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── Authentication ── -->
+<section id="authentication">
+  <h2>Authentication</h2>
+  <p>All requests require an API key in the request headers. Keys are provisioned per account and scoped to your access tier (forecast, historical, or both).</p>
+
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre><span class="cm"># Include in every request</span>
+headers = {
+    <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>,
+    <span class="str">"x-api-key"</span>: <span class="str">"YOUR_API_KEY_HERE"</span>
+}</pre>
+  </div>
+
+  <p>To request an API key, contact <a href="mailto:noah@amphitrite.fr">noah@amphitrite.fr</a>.</p>
+</section>
+
+<!-- ── Endpoints ── -->
+<section id="endpoints">
+  <h2>Endpoints</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><code>/MetOcean</code></td>
+          <td>Route data — synchronous. Returns results directly.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><code>/MetOcean/async</code></td>
+          <td>Route data — asynchronous. Returns a task ID immediately.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><code>/2DMetOcean</code> <span class="tag-beta">Beta</span></td>
+          <td>2D gridded map data over a bounding box.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><code>/plot_timeseries</code></td>
+          <td>Generate a PNG time-series chart from a MetOcean response.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><code>/task/{task_id}</code></td>
+          <td>Retrieve the status and results of a task.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><code>/user/tasks</code></td>
+          <td>List all tasks associated with your API key.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><code>/user/tasks/PENDING</code></td>
+          <td>List pending tasks only.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><code>/user/tasks/SUCCESS</code></td>
+          <td>List completed tasks only.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><code>/cancel_task/{task_id}</code></td>
+          <td>Cancel a pending or running task.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── Route Data ── -->
+<section id="route-data">
+  <h2>Route Data</h2>
+  <p>Submit an array of coordinate–timestamp points representing a vessel's route. The API returns MetOcean conditions at each point for the requested variables.</p>
+
+  <h3>Request</h3>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre>POST /MetOcean
+Content-Type: application/json
+x-api-key: YOUR_API_KEY
+
+{
+  <span class="key">"points"</span>: [
+    {
+      <span class="key">"latitude"</span>:  <span class="num">47.2</span>,
+      <span class="key">"longitude"</span>: <span class="num">-32.0</span>,
+      <span class="key">"timestamp"</span>: <span class="str">"2025-01-15T12:00:00Z"</span>
+    },
+    {
+      <span class="key">"latitude"</span>:  <span class="num">-6.8</span>,
+      <span class="key">"longitude"</span>:  <span class="num">79.0</span>,
+      <span class="key">"timestamp"</span>: <span class="str">"2025-01-15T18:00:00Z"</span>
+    }
+  ],
+  <span class="key">"variables"</span>:  [<span class="str">"current"</span>, <span class="str">"wind"</span>, <span class="str">"wave"</span>],
+  <span class="key">"task_name"</span>:  <span class="str">"voyage-atlantic-jan-2025"</span>
+}</pre>
+  </div>
+
+  <h3>Parameters</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>points</code></td>
+          <td>array</td>
+          <td>Yes</td>
+          <td>Array of <code>{latitude, longitude, timestamp}</code>. Latitude: −90 to 90. Longitude: −180 to 180. Timestamp: ISO 8601, UTC.</td>
+        </tr>
+        <tr>
+          <td><code>variables</code></td>
+          <td>array of strings</td>
+          <td>Yes</td>
+          <td>One or more variable names. See Variables table below.</td>
+        </tr>
+        <tr>
+          <td><code>wind_height</code></td>
+          <td>float</td>
+          <td>No</td>
+          <td>Wind data height above sea surface in metres. Range 10–100. Default: <code>10</code>.</td>
+        </tr>
+        <tr>
+          <td><code>task_name</code></td>
+          <td>string</td>
+          <td>No</td>
+          <td>Label for this request — useful for identifying tasks in the task list.</td>
+        </tr>
+        <tr>
+          <td><code>receive_mail</code></td>
+          <td>boolean</td>
+          <td>No</td>
+          <td>Send an email notification on task start and completion. Default: <code>false</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Variables</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Variable</th><th>Description</th><th>Response Fields</th><th>Units</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>"current"</code></td>
+          <td>Ocean surface currents with tidal components</td>
+          <td><code>Currents_Intensity</code><br><code>Currents_Direction</code></td>
+          <td>m/s, °</td>
+        </tr>
+        <tr>
+          <td><code>"wind"</code></td>
+          <td>Surface winds at specified height (default 10 m)</td>
+          <td><code>Winds_10m_Intensity</code><br><code>Winds_10m_Direction</code></td>
+          <td>m/s, °</td>
+        </tr>
+        <tr>
+          <td><code>"gust"</code></td>
+          <td>Surface wind gust</td>
+          <td><code>Gust_10m</code></td>
+          <td>m/s</td>
+        </tr>
+        <tr>
+          <td><code>"wave"</code></td>
+          <td>Combined wind waves and swell</td>
+          <td><code>Waves_Significant_Height</code><br><code>Waves_Mean_Period</code><br><code>Waves_Mean_Direction</code></td>
+          <td>m, s, °</td>
+        </tr>
+        <tr>
+          <td><code>"extra_wave"</code></td>
+          <td>Swell and wind wave components separately</td>
+          <td>
+            <code>Swell_Wave_Significant_Height</code><br>
+            <code>Swell_Wave_Mean_Period</code><br>
+            <code>Swell_Wave_Mean_Direction</code><br>
+            <code>Wind_Wave_Significant_Height</code><br>
+            <code>Wind_Wave_Mean_Period</code><br>
+            <code>Wind_Wave_Mean_Direction</code>
+          </td>
+          <td>m, s, °</td>
+        </tr>
+        <tr>
+          <td><code>"sst"</code></td>
+          <td>Sea surface temperature from infrared satellite observations</td>
+          <td><code>Sea_Surface_Temperature</code></td>
+          <td>°C</td>
+        </tr>
+        <tr>
+          <td><code>"bathy"</code></td>
+          <td>Fixed ocean bathymetry — does not vary with timestamp</td>
+          <td><code>Bathymetry</code></td>
+          <td>m below sea level</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Response</h3>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre>{
+  <span class="key">"task_id"</span>: <span class="str">"uuid-here"</span>,
+  <span class="key">"status"</span>:  <span class="str">"SUCCESS"</span>,
+  <span class="key">"result"</span>: {
+    <span class="key">"result"</span>: [
+      {
+        <span class="key">"coordinates"</span>: {
+          <span class="key">"latitude"</span>:  <span class="num">47.2</span>,
+          <span class="key">"longitude"</span>: <span class="num">-32.0</span>,
+          <span class="key">"timestamp"</span>: <span class="str">"2025-01-15T12:00:00Z"</span>
+        },
+        <span class="key">"conditions"</span>: {
+          <span class="key">"Winds_10m_Direction"</span>:      <span class="num">192</span>,
+          <span class="key">"Winds_10m_Intensity"</span>:      <span class="num">14.62</span>,
+          <span class="key">"Waves_Mean_Direction"</span>:     <span class="num">220</span>,
+          <span class="key">"Waves_Significant_Height"</span>: <span class="num">4.8</span>,
+          <span class="key">"Waves_Mean_Period"</span>:        <span class="num">9.63</span>,
+          <span class="key">"Currents_Direction"</span>:       <span class="num">194</span>,
+          <span class="key">"Currents_Intensity"</span>:       <span class="num">0.21</span>
+        }
+      }
+    ],
+    <span class="key">"execution_time"</span>: <span class="num">1.23</span>
+  }
+}</pre>
+  </div>
+
+  <p>On failure:</p>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre>{
+  <span class="key">"task_id"</span>: <span class="str">"uuid-here"</span>,
+  <span class="key">"status"</span>:  <span class="str">"FAILURE"</span>,
+  <span class="key">"error"</span>:   <span class="str">"Error message"</span>
+}</pre>
+  </div>
+
+  <h3>Python Example</h3>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre><span class="kw">import</span> requests, json
+
+base_url = <span class="str">'https://api.amphitrite.fr'</span>
+headers  = {<span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>, <span class="str">"x-api-key"</span>: <span class="str">"YOUR_API_KEY"</span>}
+
+payload = {
+    <span class="str">"points"</span>: [
+        {<span class="str">"latitude"</span>: <span class="num">47.2</span>,  <span class="str">"longitude"</span>: <span class="num">-32.0</span>, <span class="str">"timestamp"</span>: <span class="str">"2025-01-15T12:00:00Z"</span>},
+        {<span class="str">"latitude"</span>: <span class="num">-6.8</span>,  <span class="str">"longitude"</span>:  <span class="num">79.0</span>, <span class="str">"timestamp"</span>: <span class="str">"2025-01-15T18:00:00Z"</span>},
+    ],
+    <span class="str">"variables"</span>: [<span class="str">"current"</span>, <span class="str">"wind"</span>, <span class="str">"wave"</span>],
+    <span class="str">"task_name"</span>: <span class="str">"example-request"</span>
+}
+
+response = requests.<span class="fn">post</span>(f<span class="str">"{base_url}/MetOcean"</span>, headers=headers, json=payload)
+<span class="kw">if</span> response.status_code == <span class="num">200</span>:
+    print(json.<span class="fn">dumps</span>(response.<span class="fn">json</span>(), indent=<span class="num">2</span>))</pre>
+  </div>
+</section>
+
+<!-- ── 2D Map Data ── -->
+<section id="2d-map-data">
+  <h2>2D Map Data <span class="tag-beta" style="vertical-align:middle;">Beta</span></h2>
+  <p>Request gridded MetOcean data over a geographic bounding box. Returns 2D arrays of values at each grid point — suitable for map visualisations and spatial integration.</p>
+
+  <div class="callout callout-info">
+    This endpoint is in active development. For large bounding boxes, long time ranges, or current data, set <code>"async": true</code> to avoid timeouts.
+  </div>
+
+  <h3>Request</h3>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre>POST /2DMetOcean
+Content-Type: application/json
+x-api-key: YOUR_API_KEY
+
+{
+  <span class="key">"bounding_boxes"</span>: [
+    {
+      <span class="key">"latitude"</span>:  [<span class="num">44</span>, <span class="num">51</span>],
+      <span class="key">"longitude"</span>: [<span class="num">-15</span>, <span class="num">-1</span>],
+      <span class="key">"timestamp"</span>: <span class="str">"2024-05-15T00:00:00Z"</span>
+    }
+  ],
+  <span class="key">"variable"</span>:  <span class="str">"wind"</span>,
+  <span class="key">"async"</span>:    <span class="kw">false</span>,
+  <span class="key">"task_name"</span>: <span class="str">"bay-of-biscay-wind"</span>
+}</pre>
+  </div>
+
+  <h3>Parameters</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>bounding_boxes</code></td>
+          <td>array</td>
+          <td>Yes</td>
+          <td>Single-element array with <code>{latitude: [min, max], longitude: [min, max], timestamp}</code>. Longitude must be in −180/180° convention.</td>
+        </tr>
+        <tr>
+          <td><code>variable</code></td>
+          <td>string</td>
+          <td>Yes</td>
+          <td>One of: <code>"current"</code>, <code>"wind"</code>, <code>"wave"</code></td>
+        </tr>
+        <tr>
+          <td><code>async</code></td>
+          <td>boolean</td>
+          <td>No</td>
+          <td>Default: <code>false</code>. Set to <code>true</code> for large requests — returns a task ID immediately instead of waiting.</td>
+        </tr>
+        <tr>
+          <td><code>task_name</code></td>
+          <td>string</td>
+          <td>No</td>
+          <td>Label for this task.</td>
+        </tr>
+        <tr>
+          <td><code>receive_mail</code></td>
+          <td>boolean</td>
+          <td>No</td>
+          <td>Email notification on completion. Recommended for async requests.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Time range:</strong> Pass a two-element array for a range: <code>"timestamp": ["2024-05-15T00:00:00Z", "2024-05-15T06:00:00Z"]</code>. For current data, keep ranges within a single day for best performance.
+  </div>
+
+  <h3>Response</h3>
+  <p>The <code>conditions</code> object contains 2D arrays where the outer index corresponds to the latitude axis and the inner index to the longitude axis.</p>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre>{
+  <span class="key">"task_id"</span>: <span class="str">"uuid-here"</span>,
+  <span class="key">"status"</span>:  <span class="str">"SUCCESS"</span>,
+  <span class="key">"result"</span>: {
+    <span class="key">"results"</span>: [
+      {
+        <span class="key">"coordinates"</span>: {
+          <span class="key">"latitude"</span>:  [<span class="num">44.0</span>, <span class="num">44.25</span>, <span class="str">"..."</span>, <span class="num">51.0</span>],
+          <span class="key">"longitude"</span>: [<span class="num">-15.0</span>, <span class="num">-14.75</span>, <span class="str">"..."</span>, <span class="num">-1.0</span>],
+          <span class="key">"timestamp"</span>: <span class="str">"2024-05-15T00:00:00Z"</span>
+        },
+        <span class="key">"conditions"</span>: {
+          <span class="key">"Winds_10m_Intensity"</span>: [[<span class="num">10.1</span>, <span class="num">10.2</span>, <span class="str">"..."</span>], <span class="str">"..."</span>],
+          <span class="key">"Winds_10m_Direction"</span>: [[<span class="num">270</span>, <span class="num">271</span>, <span class="str">"..."</span>],  <span class="str">"..."</span>]
+        }
+      }
+    ]
+  }
+}</pre>
+  </div>
+
+  <h3>Constraints</h3>
+  <ul>
+    <li>One bounding box per request</li>
+    <li>Available variables: <code>current</code>, <code>wind</code>, <code>wave</code> only</li>
+    <li>Longitude must be in −180/180° convention (not 0/360°)</li>
+    <li>A single timestamp returns the interpolated value for that exact moment</li>
+  </ul>
+</section>
+
+<!-- ── Visualization ── -->
+<section id="visualization">
+  <h2>Visualization</h2>
+  <p>Pass a MetOcean API response directly to <code>/plot_timeseries</code> to receive a ready-made PNG chart. No client-side plotting required.</p>
+
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre><span class="cm"># 1. Get MetOcean data</span>
+metocean_response = requests.<span class="fn">post</span>(
+    f<span class="str">"{base_url}/MetOcean"</span>, headers=headers, json=payload
+).<span class="fn">json</span>()
+
+<span class="cm"># 2. Generate chart</span>
+chart = requests.<span class="fn">post</span>(
+    f<span class="str">"{base_url}/plot_timeseries"</span>,
+    json=metocean_response,
+    headers=headers
+)
+
+<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"chart.png"</span>, <span class="str">"wb"</span>) <span class="kw">as</span> f:
+    f.<span class="fn">write</span>(chart.content)</pre>
+  </div>
+
+  <h3>Chart panels</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Panel</th><th>Variable</th><th>Units</th></tr></thead>
+      <tbody>
+        <tr><td>Top</td><td>Current intensity &amp; direction</td><td>m/s, °</td></tr>
+        <tr><td>Middle</td><td>Wave significant height &amp; period</td><td>m, s</td></tr>
+        <tr><td>Orange</td><td>Wind intensity &amp; direction</td><td>m/s, °</td></tr>
+        <tr><td>Purple</td><td>Sea surface temperature</td><td>°C</td></tr>
+        <tr><td>Bottom</td><td>Bathymetry</td><td>m</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Each panel includes min, max, and mean indicators. Direction panels use cardinal labels. Output is high-resolution, suitable for reports.</p>
+</section>
+
+<!-- ── Async ── -->
+<section id="async">
+  <h2>Async &amp; Task Management</h2>
+  <p>All requests generate a <code>task_id</code> that can be used to check status and retrieve results at any time. For large requests, use the async endpoint to avoid holding an open HTTP connection.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Mode</th><th>Endpoint</th><th>Recommended for</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Synchronous</td>
+          <td><code>POST /MetOcean</code></td>
+          <td>Up to ~5,000 points. Results returned directly in the response.</td>
+        </tr>
+        <tr>
+          <td>Asynchronous</td>
+          <td><code>POST /MetOcean/async</code></td>
+          <td>100,000+ points. Returns a <code>task_id</code> immediately; poll for results separately.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Polling for Results</h3>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre><span class="kw">import</span> time, requests
+
+base_url = <span class="str">"https://api.amphitrite.fr"</span>
+headers  = {<span class="str">"x-api-key"</span>: <span class="str">"YOUR_API_KEY"</span>}
+
+<span class="cm"># Submit async request</span>
+r = requests.<span class="fn">post</span>(f<span class="str">"{base_url}/MetOcean/async"</span>, headers={**headers, <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>}, json=payload)
+task_id = r.<span class="fn">json</span>()[<span class="str">"task_id"</span>]
+
+<span class="cm"># Poll until complete (30s interval for ~5k points; 1800s for ~100k points)</span>
+<span class="kw">while</span> <span class="kw">True</span>:
+    status = requests.<span class="fn">get</span>(f<span class="str">"{base_url}/task/{task_id}"</span>, headers=headers).<span class="fn">json</span>()
+    <span class="kw">if</span> status[<span class="str">"status"</span>] <span class="kw">in</span> [<span class="str">"SUCCESS"</span>, <span class="str">"FAILURE"</span>]:
+        <span class="kw">break</span>
+    time.<span class="fn">sleep</span>(<span class="num">30</span>)</pre>
+  </div>
+
+  <h3>Task Status Response</h3>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre>{
+  <span class="key">"task_id"</span>: <span class="str">"uuid-here"</span>,
+  <span class="key">"status"</span>:  <span class="str">"PENDING"</span>,  <span class="cm">// "PENDING" | "SUCCESS" | "FAILURE"</span>
+  <span class="key">"result"</span>:  <span class="kw">null</span>,         <span class="cm">// populated on SUCCESS</span>
+  <span class="key">"error"</span>:   <span class="kw">null</span>          <span class="cm">// populated on FAILURE</span>
+}</pre>
+  </div>
+
+  <h3>Task List</h3>
+  <p>Retrieve all tasks to review pending work or recover a <code>task_id</code> after a dropped connection:</p>
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    <pre><span class="cm"># All tasks</span>
+requests.<span class="fn">get</span>(f<span class="str">"{base_url}/user/tasks"</span>,         headers=headers)
+
+<span class="cm"># Filtered by status</span>
+requests.<span class="fn">get</span>(f<span class="str">"{base_url}/user/tasks/PENDING"</span>, headers=headers)
+requests.<span class="fn">get</span>(f<span class="str">"{base_url}/user/tasks/SUCCESS"</span>, headers=headers)</pre>
+  </div>
+
+  <h3>Email Notifications</h3>
+  <p>Add <code>"receive_mail": true</code> to your payload to receive:</p>
+  <ul>
+    <li>A <strong>task start</strong> email with task ID, variables requested, and point count</li>
+    <li>A <strong>completion email</strong> with processing duration summary and full results as a JSON attachment</li>
+  </ul>
+  <p style="margin-top:12px;">Notifications go to the email on your account by default. Override with <code>"email": "other@example.com"</code>.</p>
+</section>
+
+<!-- ── Data Specs ── -->
+<section id="data-specs">
+  <h2>Data Specs</h2>
+  <p>The API serves data from three tiers depending on the requested timestamp. All tiers are accessed transparently through the same endpoint — no configuration required.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tier</th><th>Timeframe</th><th>Updated</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Standard Historical</strong></td><td>3+ years ago</td><td>Monthly</td></tr>
+        <tr><td><strong>Recent Reanalysis</strong></td><td>5–90 days ago</td><td>Daily</td></tr>
+        <tr><td><strong>Operational Forecast</strong></td><td>Recent past + 7 days ahead</td><td>Daily</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Ocean Currents</h3>
+  <p>Forecast data is produced by <strong>ORCAst</strong>, Amphitrite's proprietary deep learning current model trained exclusively on satellite observational data — drifters, altimetry, SST, and chlorophyll measurements. Reanalysis data is produced by the companion model, <strong>ORCHIst</strong>, which integrates data in both forward and backward temporal directions for higher historical accuracy.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Resolution</td><td>1/30° (~3.7 km)</td></tr>
+        <tr><td>Temporal resolution</td><td>Daily</td></tr>
+        <tr><td>Geographic coverage</td><td>Global oceans, 60°S–65°N</td></tr>
+        <tr><td>Forecast horizon</td><td>7 days</td></tr>
+        <tr><td>Historical depth</td><td>Up to 3 years</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Tidal Corrections</h3>
+  <p>Tidal components are computed separately from dedicated high-resolution tidal models and combined with current forecasts in the <code>"current"</code> variable output.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Region</th><th>Model</th><th>Resolution</th><th>Temporal</th></tr></thead>
+      <tbody>
+        <tr><td>Global</td><td>FES2014 (Copernicus)</td><td>1/12°</td><td>Hourly</td></tr>
+        <tr><td>English Channel</td><td>AMM15 (Met Office)</td><td>1.5 km</td><td>Hourly</td></tr>
+        <tr><td>Strait of Gibraltar</td><td>Puertos del Estado</td><td>1/45°</td><td>Hourly</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Winds</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tier</th><th>Source</th><th>Resolution</th><th>Coverage</th></tr></thead>
+      <tbody>
+        <tr><td>Standard Historical</td><td>ERA5 (Copernicus / ECMWF)</td><td>1/4°, hourly</td><td>Global</td></tr>
+        <tr><td>Recent Reanalysis</td><td>ERA5T (ECMWF)</td><td>1/4°, hourly</td><td>Global</td></tr>
+        <tr><td>Operational Forecast</td><td>ECMWF IFS</td><td>1/4°, hourly</td><td>Global</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Waves</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tier</th><th>Source</th><th>Resolution</th><th>Coverage</th></tr></thead>
+      <tbody>
+        <tr><td>Standard Historical</td><td>WAVERYS (Copernicus)</td><td>1/5°, 3-hourly</td><td>Global</td></tr>
+        <tr><td>Recent Reanalysis</td><td>ERA5T (ECMWF)</td><td>1/2°, hourly</td><td>Global</td></tr>
+        <tr><td>Operational Forecast</td><td>ECMWF WAM</td><td>1/4°, hourly</td><td>Global</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <code>extra_wave</code> (swell and wind wave components separately) is available in Standard Historical and Recent Reanalysis tiers. Not available in Operational Forecast.
+  </div>
+
+  <h3>Sea Surface Temperature</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Source</td><td>OSTIA (Copernicus Marine Service)</td></tr>
+        <tr><td>Resolution</td><td>1/20°</td></tr>
+        <tr><td>Coverage</td><td>Global</td></tr>
+        <tr><td>Availability delay</td><td>~2 days after observation date</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Bathymetry</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Source</td><td>ETOPO (NOAA)</td></tr>
+        <tr><td>Resolution</td><td>15 arc-seconds (~450 m)</td></tr>
+        <tr><td>Coverage</td><td>Global</td></tr>
+        <tr><td>Type</td><td>Fixed — does not vary with timestamp</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── Direction Conventions ── -->
+<section id="conventions">
+  <h2>Direction Conventions</h2>
+
+  <div class="callout callout-critical">
+    <strong>Critical for integration:</strong> current directions and wind/wave directions use opposite conventions.
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Field</th><th>Convention</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>Currents_Direction</code></td>
+          <td>Direction the current is flowing <strong>TO</strong></td>
+          <td>90° = current flowing eastward</td>
+        </tr>
+        <tr>
+          <td><code>Winds_10m_Direction</code></td>
+          <td>Direction wind is coming <strong>FROM</strong></td>
+          <td>90° = wind blowing from the east (moving westward)</td>
+        </tr>
+        <tr>
+          <td><code>Waves_Mean_Direction</code><br>
+              <code>Swell_Wave_Mean_Direction</code><br>
+              <code>Wind_Wave_Mean_Direction</code></td>
+          <td>Direction waves are coming <strong>FROM</strong></td>
+          <td>90° = waves propagating westward</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>All directions are in degrees measured clockwise from 0° (North).</p>
+</section>
+
+<!-- ── Contact ── -->
+<section id="contact">
+  <h2>Contact</h2>
+  <p>To request API access, report an issue, or ask a technical question:</p>
+  <p><strong>Email:</strong> <a href="mailto:noah@amphitrite.fr">noah@amphitrite.fr</a></p>
+  <p>Responses within one business day.</p>
+</section>
+
+</div><!-- /content -->
+
+<footer>
+  © Amphitrite &mdash; Ocean Data Intelligence &nbsp;·&nbsp;
+  <a href="https://www.amphitrite.fr">amphitrite.fr</a>
+</footer>
+</main>
+
+<script>
+  // Scrollspy via IntersectionObserver
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks  = document.querySelectorAll('.nav-item');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Smooth scroll
+  navLinks.forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Copy buttons
+  function copyCode(btn) {
+    const text = btn.nextElementSibling.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
