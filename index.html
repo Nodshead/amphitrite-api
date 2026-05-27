@@ -228,7 +228,7 @@
 
   <div class="stat-grid">
     <div class="stat-card">
-      <div class="num">2.5–3 km</div>
+      <div class="num">2.5–3.7 km</div>
       <div class="lbl">Ocean current resolution</div>
     </div>
     <div class="stat-card">
@@ -254,12 +254,12 @@
     <div class="diff-card">
       <div class="diff-icon">📡</div>
       <div class="diff-title">Highest-resolution currents available</div>
-      <div class="diff-body">At 2.5–3 km resolution, our current data resolves mesoscale features — eddies, coastal jets, shelf-edge dynamics — that disappear entirely at 10–25 km. This is the resolution range where routing, station-keeping, and subsea planning decisions actually live.</div>
+      <div class="diff-body">At 2.5–3.7 km resolution, our current data resolves mesoscale features — eddies, coastal jets, shelf-edge dynamics — that disappear entirely at 10–25 km. This is the resolution range where routing, station-keeping, and subsea planning decisions actually live.</div>
     </div>
     <div class="diff-card">
       <div class="diff-icon">📅</div>
       <div class="diff-title">14-day forecast window</div>
-      <div class="diff-body">Plan further ahead. Wind and wave forecasts extend to 14 days. Current forecasts up to 9 days — updated hourly so you're always working from the freshest data.</div>
+      <div class="diff-body">Plan further ahead. Wind and wave forecasts extend to 14 days. Current forecasts up to 6 days — updated daily so you're always working from the freshest data.</div>
     </div>
     <div class="diff-card">
       <div class="diff-icon">🔌</div>
@@ -279,7 +279,7 @@
         <tr><td>Base URL</td><td><code>https://api.amphitrite.fr</code></td></tr>
         <tr><td>Request format</td><td>JSON over HTTPS</td></tr>
         <tr><td>Authentication</td><td>API key via request header</td></tr>
-        <tr><td>Current resolution</td><td>Up to 2 km, updated hourly</td></tr>
+        <tr><td>Current resolution</td><td>2.5–3.7 km (ORCAst) — hourly output via tidal blending</td></tr>
         <tr><td>Forecast horizon</td><td>Up to 14 days ahead (varies by variable)</td></tr>
         <tr><td>Historical data</td><td>Up to 3 years prior</td></tr>
         <tr><td>Processing modes</td><td>Synchronous and asynchronous</td></tr>
@@ -518,15 +518,15 @@ x-api-key: YOUR_API_KEY
   </div>
 
   <h3>Ocean Currents</h3>
-  <p>Produced by Amphitrite's proprietary deep learning models trained on multi-source satellite observations. Output is cross-validated against independent in-situ measurements, buoy networks, and AIS vessel drift data before delivery.</p>
+  <p>Forecast currents are produced by <strong>ORCAst</strong>, Amphitrite's proprietary deep learning model trained exclusively on observational data — drifters, SWOT and nadir altimetry, SST, and chlorophyll. Historical and reanalysis currents use <strong>ORCHIst</strong>, its hindcast companion, which integrates backwards-forwards information from all available satellite data for higher accuracy. Output is cross-validated against independent in-situ measurements, buoy networks, and AIS vessel drift data before delivery.</p>
   <div class="tw">
     <table>
       <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
       <tbody>
-        <tr><td>Resolution</td><td>Up to 2 km — higher resolution in key regions</td></tr>
-        <tr><td>Temporal resolution</td><td>Hourly</td></tr>
+        <tr><td>Resolution</td><td>2.5–3.7 km (ORCAst global model)</td></tr>
+        <tr><td>Temporal resolution</td><td>Hourly output (tidal component + daily ORCAst background)</td></tr>
         <tr><td>Geographic coverage</td><td>Global oceans, 60°S–65°N</td></tr>
-        <tr><td>Forecast horizon</td><td>3–9 days</td></tr>
+        <tr><td>Forecast horizon</td><td>6 days (ORCAst)</td></tr>
         <tr><td>Historical depth</td><td>Up to 3 years</td></tr>
         <tr><td>Tidal correction</td><td>Included — regional high-resolution tidal models applied where available</td></tr>
       </tbody>
@@ -552,13 +552,17 @@ x-api-key: YOUR_API_KEY
       <tbody>
         <tr><td>Standard Historical</td><td>~22 km</td><td>3-hourly</td><td>Global</td><td>3+ years</td></tr>
         <tr><td>Recent Reanalysis</td><td>~55 km</td><td>Hourly</td><td>Global</td><td>5–90 days ago</td></tr>
-        <tr><td>Operational Forecast</td><td>~25 km</td><td>3-hourly</td><td>Global</td><td>14 days</td></tr>
+        <tr><td>Operational Forecast</td><td>~25 km</td><td>3-hourly</td><td>Global</td><td>14 days — updated 4× daily</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="callout info">
-    <strong>Swell and wind wave components</strong> (<code>extra_wave</code>) are available at higher resolution — ~9 km, 3-hourly, with a 9-day forecast horizon.
+    <strong>Swell and wind wave components</strong> (<code>extra_wave</code>) — Copernicus MFWAM at ~9 km, 3-hourly, with a 9-day forecast horizon, updated 2× daily.
+  </div>
+
+  <div class="callout warning">
+    <strong>Note:</strong> Reanalysis and forecast tiers can differ in both spatial and temporal resolution for the same variable. For example, wave reanalysis runs at ~55 km / hourly while the forecast runs at ~25 km / 3-hourly. The API selects the appropriate tier automatically based on the requested timestamp.
   </div>
 
   <h3>Sea Surface Temperature</h3>
